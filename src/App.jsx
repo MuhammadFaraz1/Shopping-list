@@ -1,51 +1,55 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronRight, faChevronLeft, faCircle, faCheckCircle, faPlus, faTrash, faEdit, faSave } from '@fortawesome/free-solid-svg-icons';
 
 const App = () => {
   const [inputValue, setInputValue] = useState('');
+  const [items, setItems] = useState(() => {
+    const savedItems = localStorage.getItem('shoppingListItems');
+    return savedItems ? JSON.parse(savedItems) : [];
+  });
+
   const [totalItemCount, setTotalItemCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
-  const [items, setItems] = useState([]);
 
-const handleAddButtonClick = () => {
-  if (inputValue.trim() === '') return;
+  // Save to localStorage on any item change
+  useEffect(() => {
+    localStorage.setItem('shoppingListItems', JSON.stringify(items));
+    calculateTotal(items);
+    setTotalCount(items.length);
+  }, [items]);
 
-  const newItem = {
-    itemName: inputValue,
-    quantity: 0,
-    isSelected: false,
-    isEditing: false,
+  const handleAddButtonClick = () => {
+    if (inputValue.trim() === '') return;
+
+    const newItem = {
+      itemName: inputValue,
+      quantity: 0,
+      isSelected: false,
+      isEditing: false,
+    };
+
+    const newItems = [...items, newItem];
+    setItems(newItems);
+    setInputValue('');
   };
 
-  const newItems = [...items, newItem];
-  setItems(newItems);
-  setInputValue('');
-  calculateTotal(newItems);
-  setTotalCount(newItems.length);  
-};
+  const handleQuantityIncrease = (index) => {
+    const newItems = [...items];
+    newItems[index].quantity++;
+    setItems(newItems);
+  };
 
-const handleQuantityIncrease = (index) => {
-  const newItems = [...items];
-  newItems[index].quantity++;
-  setItems(newItems);
-  calculateTotal(newItems);
-};
+  const handleQuantityDecrease = (index) => {
+    const newItems = [...items];
+    if (newItems[index].quantity > 0) newItems[index].quantity--;
+    setItems(newItems);
+  };
 
-const handleQuantityDecrease = (index) => {
-  const newItems = [...items];
-  if (newItems[index].quantity > 0) newItems[index].quantity--;
-  setItems(newItems);
-  calculateTotal(newItems);
-};
-
-const handleDelete = (index) => {
-  const newItems = items.filter((_, i) => i !== index);
-  setItems(newItems);
-  calculateTotal(newItems);
-  setTotalCount(newItems.length);  
-};
-
+  const handleDelete = (index) => {
+    const newItems = items.filter((_, i) => i !== index);
+    setItems(newItems);
+  };
 
   const toggleComplete = (index) => {
     const newItems = [...items];
@@ -53,7 +57,7 @@ const handleDelete = (index) => {
     setItems(newItems);
   };
 
-  const calculateTotal = (itemList = items) => {
+  const calculateTotal = (itemList) => {
     const totalItemCount = itemList.reduce((total, item) => total + item.quantity, 0);
     setTotalItemCount(totalItemCount);
   };
@@ -74,7 +78,14 @@ const handleDelete = (index) => {
     <div className='app-background'>
       <div className='main-container'>
         <div className='add-item-box'>
-          <input value={inputValue} onChange={(e) => setInputValue(e.target.value)} className='add-item-input' placeholder='Add an item...' />
+          <input
+            id='add-item'
+            name='add-item'
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            className='add-item-input'
+            placeholder='Add an item...'
+          />
           <FontAwesomeIcon icon={faPlus} onClick={handleAddButtonClick} />
         </div>
 
@@ -88,14 +99,12 @@ const handleDelete = (index) => {
                     <span className='completed'>{item.itemName}</span>
                   </>
                 ) : item.isEditing ? (
-                  <>
-                    <input
-                      type='text'
-                      value={item.itemName}
-                      onChange={(e) => handleEditChange(e, index)}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  </>
+                  <input
+                    type='text'
+                    value={item.itemName}
+                    onChange={(e) => handleEditChange(e, index)}
+                    onClick={(e) => e.stopPropagation()}
+                  />
                 ) : (
                   <>
                     <FontAwesomeIcon icon={faCircle} />
@@ -126,7 +135,9 @@ const handleDelete = (index) => {
           ))}
         </div>
 
-        <div className='total'>{totalItemCount <=1 ? "Item" : "Items"} : {totalItemCount}</div>
+        <div className='total'>
+          {totalItemCount <= 1 ? 'Item' : 'Items'} : {totalItemCount}
+        </div>
         <div className='total1'>Total : {totalCount}</div>
       </div>
     </div>
